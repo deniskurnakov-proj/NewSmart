@@ -26,12 +26,19 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Audit hotel websites
-        run: node tools/site_audit.js
-      - name: Upload audit results
+        id: audit
+        continue-on-error: true
+        run: |
+          mkdir -p data
+          node tools/site_audit.js > data/site_audit.log 2>&1
+      - name: Upload audit results and log
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: hotel-site-audit
           path: |
             data/site_audit_results.csv
             data/site_audit_results.json
+            data/site_audit.log
+          if-no-files-found: warn
           retention-days: 7
