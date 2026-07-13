@@ -6,6 +6,8 @@ on:
     paths:
       - 'tools/fsa_enrich.py'
       - '.github/workflows/fsa-enrich.yml'
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
@@ -23,7 +25,14 @@ jobs:
           python-version: '3.12'
       - name: Fetch registry details
         run: python tools/fsa_enrich.py
-      - name: Commit export
+      - name: Upload export
+        uses: actions/upload-artifact@v4
+        with:
+          name: fsa-hotels-enriched
+          path: data/
+          retention-days: 3
+      - name: Commit export on main
+        if: github.event_name == 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
