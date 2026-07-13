@@ -1,1 +1,1 @@
-Trigger FSA hotel contact export.
+Trigger optimized FSA hotel contact export.
