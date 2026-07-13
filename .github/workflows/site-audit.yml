@@ -1,0 +1,37 @@
+name: Hotel website audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/site_audit.js'
+      - 'data/site_audit_input.csv'
+      - 'package.json'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.event.pull_request.head.ref == 'site-audit-run-20260713'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Audit hotel websites
+        run: node tools/site_audit.js
+      - name: Upload audit results
+        uses: actions/upload-artifact@v4
+        with:
+          name: hotel-site-audit
+          path: |
+            data/site_audit_results.csv
+            data/site_audit_results.json
+          retention-days: 7
