@@ -1,0 +1,37 @@
+name: Personalize hotel leads
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/personalize_leads.js'
+      - 'data/personalize_leads.trigger'
+      - '.github/workflows/personalize-leads.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  scrape:
+    if: github.event.pull_request.head.ref == 'site-audit-run-20260713'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Scrape hotel sites
+        run: node tools/personalize_leads.js
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: personalize-hotel-leads
+          path: |
+            data/personalize_leads.json
+            data/personalize_leads.md
+          retention-days: 7
