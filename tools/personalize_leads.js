@@ -2,14 +2,14 @@ const fs = require('fs');
 const { chromium } = require('playwright');
 
 const targets = [
-  {key:'mark', name:'Отель Марк', url:'https://hotel-mark.ru/'},
-  {key:'frog', name:'Princess Frog', url:'https://www.sbcomplex.su/'},
-  {key:'dubna', name:'Гостиница Дубна', url:'https://hotel-dubna.ru/'},
-  {key:'sadko', name:'Гостиница Садко', url:'https://www.sadko.com.ru/'},
-  {key:'mityaevski', name:'Митяевский гостевой дом', url:'https://vk.com/mityaevski_guesthouse'}
+  {key:'mark', name:'Отель Марк', url:'https://hotel-mark.ru/', extra:['https://www.hotel-mark.ru/index.php?cat=47','https://www.hotel-mark.ru/gallery/']},
+  {key:'frog', name:'Princess Frog', url:'https://www.sbcomplex.su/', extra:['https://www.sbcomplex.su/hotel.html','https://www.sbcomplex.su/bath.html','https://www.sbcomplex.su/contacts.html']},
+  {key:'dubna', name:'Гостиница Дубна', url:'https://hotel-dubna.ru/', extra:['https://www.hotel-dubna.ru/booking/','https://www.hotel-dubna.ru/conference-halls/','https://www.hotel-dubna.ru/restaurants/','https://www.hotel-dubna.ru/services/']},
+  {key:'sadko', name:'Гостиница Садко', url:'https://www.sadko.com.ru/', extra:['https://sadko.com.ru/gostinica','https://sadko.com.ru/restoran-karaoke','https://sadko.com.ru/karaoke','https://sadko.com.ru/fotogalereya','https://sadko.com.ru/address']},
+  {key:'mityaevski', name:'Митяевский гостевой дом', url:'https://m.vk.com/public209316170', extra:[]}
 ];
 
-const kw = /(номер|комнат|прожив|услуг|ресторан|кафе|банкет|свад|конферен|саун|спа|spa|бассейн|экскурс|отдых|акци|цены|тариф|booking|book|room|service|contact|about|контакт|о нас)/i;
+const kw = /(номер|комнат|прожив|гостиниц|услуг|ресторан|кафе|банкет|свад|конферен|саун|спа|spa|бассейн|экскурс|отдых|акци|цены|тариф|booking|book|room|service|contact|about|контакт|о нас)/i;
 
 function clean(s='') { return s.replace(/\u00a0/g,' ').replace(/[\t ]+/g,' ').replace(/\n{3,}/g,'\n\n').trim(); }
 function uniq(a){ return [...new Set(a.filter(Boolean))]; }
@@ -37,7 +37,7 @@ async function extract(page, url) {
       htmlLang: document.documentElement.lang || ''
     };
   }).catch(() => ({title:'',description:'',h1:[],h2:[],buttons:[],body:'',links:[],htmlLang:''}));
-  const body = clean(data.body).slice(0,18000);
+  const body = clean(data.body).slice(0,22000);
   const emails = uniq((body.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig) || []));
   const phones = uniq((body.match(/(?:\+7|8)[\s\-()]*\d{3}[\s\-()]*\d{3}[\s\-()]*\d{2}[\s\-()]*\d{2}/g) || []).map(x=>x.replace(/\s+/g,' ')));
   return {
@@ -73,7 +73,7 @@ async function extract(page, url) {
     const candidates = main.links
       .filter(l=>{try{const u=new URL(l.href); return u.origin===origin && kw.test((l.text||'')+' '+u.pathname)}catch{return false}})
       .map(l=>l.href.split('#')[0]);
-    const selected = uniq(candidates).filter(u=>u!==main.finalUrl).slice(0,8);
+    const selected = uniq([...(t.extra||[]),...candidates]).filter(u=>u!==main.finalUrl).slice(0,12);
     const pages=[];
     for (const u of selected) {
       const p=await context.newPage();
@@ -101,13 +101,13 @@ async function extract(page, url) {
     lines.push(`Emails: ${uniq([...(r.main.emails||[]),...r.pages.flatMap(p=>p.emails||[])]).join(' | ')}`);
     lines.push(`Phones: ${uniq([...(r.main.phones||[]),...r.pages.flatMap(p=>p.phones||[])]).join(' | ')}`);
     lines.push('Main text:');
-    lines.push(r.main.body.slice(0,12000));
+    lines.push(r.main.body.slice(0,15000));
     for (const p of r.pages) {
       lines.push(`## Page ${p.finalUrl}`);
       lines.push(`Title: ${p.title}`);
       lines.push(`H1: ${p.h1.join(' | ')}`);
       lines.push(`H2: ${p.h2.join(' | ')}`);
-      lines.push(p.body.slice(0,6000));
+      lines.push(p.body.slice(0,9000));
     }
     lines.push('');
   }
